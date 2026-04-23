@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATLAS — AI Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07090A;
+      --teal: #26C6DA;
+      --teal-dim: rgba(38,198,218,0.12);
+      --teal-border: rgba(38,198,218,0.35);
+      --green: #00E676;
+      --green-dim: rgba(0,230,118,0.10);
+      --green-glow: rgba(0,230,118,0.22);
+      --green-border: rgba(0,230,118,0.45);
+      --purple: #CE93D8;
+      --purple-dim: rgba(206,147,216,0.10);
+      --purple-border: rgba(206,147,216,0.32);
+      --blue: #64B5F6;
+      --blue-dim: rgba(100,181,246,0.10);
+      --blue-border: rgba(100,181,246,0.30);
+      --amber: #FFD54F;
+      --amber-dim: rgba(255,213,79,0.10);
+      --amber-border: rgba(255,213,79,0.30);
+      --coral: #FF8A65;
+      --coral-dim: rgba(255,138,101,0.10);
+      --coral-border: rgba(255,138,101,0.32);
+      --surface: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.06);
+      --text: #E8EAF0;
+      --text-dim: rgba(232,234,240,0.45);
+      --connector: rgba(255,255,255,0.12);
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── PAGE WRAPPER ── */
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .header-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+    .header-title {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 500;
+      color: var(--green);
+      text-shadow: 0 0 40px rgba(0,230,118,0.5);
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+    .header-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+    }
+
+    /* ── DIAGRAM ── */
+    .diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    /* ── LAYER ROW ── */
+    .layer {
+      display: flex;
+      align-items: stretch;
+      position: relative;
+      border-radius: 16px;
+      overflow: visible;
+      margin-bottom: 0;
+    }
+
+    /* Stripe behind each layer */
+    .layer-stripe {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── LAYER LABEL (left sidebar) ── */
+    .layer-label {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      min-width: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 4px;
+      z-index: 1;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    /* ── LAYER CONTENT ── */
+    .layer-content {
+      flex: 1;
+      padding: 20px 16px;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    /* ── CONNECTOR SECTION ── */
+    .connector-row {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 2;
+      margin: 0 36px;
+    }
+
+    .connector-lines {
+      display: flex;
+      gap: 48px;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      position: relative;
+      width: 100%;
+    }
+
+    .connector-line {
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--connector), var(--connector));
+      position: relative;
+      overflow: visible;
+      flex-shrink: 0;
+    }
+
+    /* Animated flowing dot on each connector */
+    .connector-line::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: white;
+      opacity: 0.7;
+      animation: flowDown 1.8s ease-in-out infinite;
+      top: -5px;
+    }
+
+    .connector-line:nth-child(2)::after { animation-delay: 0.3s; }
+    .connector-line:nth-child(3)::after { animation-delay: 0.6s; }
+    .connector-line:nth-child(4)::after { animation-delay: 0.9s; }
+    .connector-line:nth-child(5)::after { animation-delay: 1.2s; }
+
+    @keyframes flowDown {
+      0%   { top: -5px; opacity: 0; }
+      15%  { opacity: 0.8; }
+      85%  { opacity: 0.8; }
+      100% { top: calc(100% + 5px); opacity: 0; }
+    }
+
+    /* Arrow at bottom of connector */
+    .connector-arrow {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 6px solid var(--connector);
+    }
+
+    /* ── NODE CARD ── */
+    .node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 14px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.025);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: default;
+      flex: 1;
+      min-width: 0;
+    }
+    .node:hover {
+      transform: translateY(-2px);
+    }
+
+    .node-icon {
+      font-size: 22px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .node-name {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+    .node-sub {
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+
+    /* ── LAYER 1 — YOU (teal) ── */
+    .layer-you .layer-label { color: var(--teal); }
+    .layer-you .layer-stripe { background: var(--teal-dim); border-color: var(--teal-border); }
+    .layer-you .node {
+      border-color: var(--teal-border);
+      background: rgba(38,198,218,0.07);
+      box-shadow: 0 0 24px rgba(38,198,218,0.08);
+      max-width: 360px;
+    }
+    .layer-you .node:hover { box-shadow: 0 4px 32px rgba(38,198,218,0.2); }
+    .layer-you .node-name { color: var(--teal); font-size: 14px; }
+    .layer-you .node-icon { font-size: 28px; }
+
+    /* ── LAYER 2 — ATLAS (green hero) ── */
+    .layer-atlas .layer-stripe {
+      background: var(--green-glow);
+      border-color: var(--green-border);
+      box-shadow: 0 0 60px rgba(0,230,118,0.15), inset 0 0 40px rgba(0,230,118,0.05);
+    }
+    .layer-atlas .layer-label { color: var(--green); }
+    .layer-atlas .layer-content { padding: 28px 16px; }
+    .layer-atlas .node {
+      border-color: var(--green-border);
+      background: rgba(0,230,118,0.07);
+      box-shadow: 0 0 40px rgba(0,230,118,0.15), 0 0 80px rgba(0,230,118,0.06);
+      max-width: 100%;
+      width: 100%;
+      padding: 24px 24px;
+    }
+    .layer-atlas .node:hover {
+      box-shadow: 0 4px 60px rgba(0,230,118,0.3), 0 0 100px rgba(0,230,118,0.12);
+    }
+    .layer-atlas .node-icon { font-size: 36px; margin-bottom: 10px; }
+    .layer-atlas .node-name { color: var(--green); font-size: 18px; letter-spacing: 0.06em; }
+    .layer-atlas .node-sub { font-size: 11px; color: rgba(0,230,118,0.6); }
+
+    /* Pulsing glow on ATLAS */
+    @keyframes atlasPulse {
+      0%, 100% { box-shadow: 0 0 40px rgba(0,230,118,0.15), 0 0 80px rgba(0,230,118,0.06); }
+      50%       { box-shadow: 0 0 60px rgba(0,230,118,0.25), 0 0 120px rgba(0,230,118,0.10); }
+    }
+    .layer-atlas .node { animation: atlasPulse 3s ease-in-out infinite; }
+
+    /* ── LAYER 3 — DEPARTMENTS (purple) ── */
+    .layer-depts .layer-label { color: var(--purple); }
+    .layer-depts .layer-stripe { background: var(--purple-dim); border-color: var(--purple-border); }
+    .layer-depts .node {
+      border-color: var(--purple-border);
+      background: rgba(206,147,216,0.06);
+    }
+    .layer-depts .node:hover { box-shadow: 0 4px 20px rgba(206,147,216,0.18); }
+    .layer-depts .node-name { color: var(--purple); font-size: 10px; }
+
+    /* ── LAYER 4 — INTEGRATIONS (blue) & AUTOMATIONS (amber) ── */
+    .layer-integ .layer-label { color: var(--blue); }
+    .layer-integ .layer-stripe { background: rgba(100,181,246,0.05); border-color: rgba(100,181,246,0.2); }
+
+    .integ-groups {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+      align-items: flex-start;
+    }
+    .integ-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .integ-group-label {
+      font-size: 8px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .integ-group-label.blue {
+      color: var(--blue);
+      background: rgba(100,181,246,0.1);
+      border: 1px solid rgba(100,181,246,0.2);
+    }
+    .integ-group-label.amber {
+      color: var(--amber);
+      background: rgba(255,213,79,0.08);
+      border: 1px solid rgba(255,213,79,0.2);
+    }
+
+    .integ-items {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .integ-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      transition: transform 0.15s ease;
+    }
+    .integ-item:hover { transform: translateX(2px); }
+    .integ-item.blue {
+      background: var(--blue-dim);
+      border: 1px solid var(--blue-border);
+      color: var(--blue);
+    }
+    .integ-item.amber {
+      background: var(--amber-dim);
+      border: 1px solid var(--amber-border);
+      color: var(--amber);
+    }
+    .integ-item-icon { font-size: 13px; flex-shrink: 0; }
+    .integ-item-text { white-space: nowrap; }
+
+    .integ-divider {
+      width: 1px;
+      background: var(--border);
+      align-self: stretch;
+      flex-shrink: 0;
+    }
+
+    /* ── LAYER 5 — BUSINESSES (coral) ── */
+    .layer-biz .layer-label { color: var(--coral); }
+    .layer-biz .layer-stripe { background: var(--coral-dim); border-color: var(--coral-border); }
+    .layer-biz .node {
+      border-color: var(--coral-border);
+      background: rgba(255,138,101,0.06);
+    }
+    .layer-biz .node:hover { box-shadow: 0 4px 20px rgba(255,138,101,0.18); }
+    .layer-biz .node-name { color: var(--coral); font-size: 10px; }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      margin-top: 56px;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+    .footer span { color: var(--green); }
+
+    /* ── STORY BAR ── */
+    .story-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 40px;
+      padding: 12px 20px;
+      border-radius: 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+    }
+    .story-step {
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .story-arrow {
+      color: var(--green);
+      font-size: 12px;
+    }
+
+    /* ── TOUR BUTTON ── */
+    #tour-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 20px;
+      padding: 10px 28px;
+      background: var(--green);
+      color: #07090A;
+      border: none;
+      border-radius: 40px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 0 24px rgba(0,230,118,0.4);
+    }
+    #tour-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 36px rgba(0,230,118,0.6);
+    }
+
+    /* ── TOUR OVERLAY ── */
+    .tour-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 1000;
+      pointer-events: none;
+    }
+    .tour-overlay.active { display: block; }
+    /* Re-enable pointer events on interactive children */
+    .tour-skip, .tour-card { pointer-events: auto; }
+    /* When tour active, dim everything EXCEPT highlighted element */
+    body.tour-active .layer:not(.tour-highlight) {
+      opacity: 0.2;
+      transition: opacity 0.3s;
+    }
+    body.tour-active .layer.tour-highlight {
+      opacity: 1 !important;
+      transition: opacity 0.3s;
+    }
+
+    .tour-skip {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: rgba(232,234,240,0.55);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 1003;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .tour-skip:hover { background: rgba(255,255,255,0.13); color: var(--text); }
+
+    .tour-highlight {
+      position: relative !important;
+      z-index: 1001 !important;
+      outline: 4px solid var(--tour-color, #ffffff);
+      outline-offset: 8px;
+      background: rgba(255,255,255,0.15) !important;
+      box-shadow:
+        0 0 0 4px var(--tour-color, rgba(255,255,255,0.9)),
+        0 0 60px var(--tour-glow, rgba(255,255,255,0.8)),
+        0 0 120px var(--tour-glow, rgba(255,255,255,0.5)) !important;
+      border-radius: 16px;
+    }
+
+    .tour-card {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(500px, calc(100vw - 32px));
+      background: #0E1214;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 20px 24px 22px;
+      z-index: 1002;
+      font-family: 'DM Mono', monospace;
+      box-shadow: 0 12px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+      transition: border-color 0.35s ease, box-shadow 0.35s ease;
+    }
+    .tour-card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .tour-step-label {
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+    .tour-counter {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+    }
+    .tour-card-title {
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .tour-card-text {
+      font-size: 12px;
+      line-height: 1.75;
+      color: rgba(232,234,240,0.6);
+      letter-spacing: 0.03em;
+      margin-bottom: 22px;
+    }
+    .tour-card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .tour-btn-back {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      padding: 9px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+    .tour-btn-back:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+    .tour-btn-back.hidden { visibility: hidden; pointer-events: none; }
+    .tour-btn-next {
+      background: var(--green);
+      border: none;
+      color: #07090A;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      padding: 9px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 2px 16px rgba(0,230,118,0.3);
+    }
+    .tour-btn-next:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 28px rgba(0,230,118,0.5);
+    }
+
+    /* ── RESPONSIVE ── */
+
+    /* Tablet: ≤ 900px — departments/businesses wrap to 4 per row; integ items 3-col */
+    @media (max-width: 900px) {
+      .layer-depts .layer-content,
+      .layer-biz .layer-content {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .layer-depts .node,
+      .layer-biz .node {
+        flex: 0 1 calc(25% - 8px);
+        min-width: 90px;
+      }
+      .integ-items {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .integ-item-text { white-space: normal; }
+    }
+
+    /* Small tablet: ≤ 768px — general tightening */
+    @media (max-width: 768px) {
+      .page { padding: 28px 12px 60px; }
+      .layer-content { gap: 6px; }
+      .node { padding: 10px 6px; }
+      .node-name { font-size: 9px; }
+      .node-sub { display: none; }
+      .node-icon { font-size: 18px; }
+      .layer-label { min-width: 26px; font-size: 7px; }
+      .integ-groups { flex-direction: column; }
+      .integ-divider { width: 100%; height: 1px; }
+      .connector-lines { gap: 28px; }
+    }
+
+    /* Mobile: ≤ 600px — full rework */
+    @media (max-width: 600px) {
+      .page { padding: 16px 8px 40px; }
+
+      /* Layer becomes column so label sits on top horizontally */
+      .layer { flex-direction: column; }
+      .layer-label {
+        writing-mode: horizontal-tb;
+        text-orientation: mixed;
+        transform: none;
+        min-width: unset;
+        width: 100%;
+        padding: 8px 12px 2px;
+        justify-content: flex-start;
+        font-size: 8px;
+        letter-spacing: 0.2em;
+      }
+
+      /* Layer content: wrap, tighter */
+      .layer-content {
+        padding: 8px 8px 12px;
+        flex-wrap: wrap;
+        gap: 5px;
+        align-items: flex-start;
+      }
+
+      /* All nodes: smaller */
+      .node { padding: 7px 4px; }
+      .node-icon { font-size: 15px; margin-bottom: 3px; }
+      .node-name { font-size: 8px; white-space: normal; line-height: 1.2; }
+      .node-sub { display: none !important; }
+
+      /* Departments + Businesses: max 4 per row */
+      .layer-depts .layer-content,
+      .layer-biz .layer-content {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+      .layer-depts .node,
+      .layer-biz .node {
+        flex: 0 0 calc(25% - 4px);
+        min-width: 0;
+        max-width: calc(25% - 4px);
+      }
+
+      /* YOU layer: full-ish width, readable */
+      .layer-you .node { max-width: 100%; }
+      .layer-you .node-name { font-size: 12px; white-space: nowrap; }
+      .layer-you .node-icon { font-size: 22px; }
+
+      /* ATLAS: full width, reduced padding, keep subtitle */
+      .layer-atlas .layer-content { padding: 10px 8px 14px; }
+      .layer-atlas .node { padding: 14px 12px; width: 100%; }
+      .layer-atlas .node-icon { font-size: 28px; }
+      .layer-atlas .node-name { font-size: 15px; white-space: normal; }
+      .layer-atlas .node-sub { display: block !important; font-size: 9px; }
+
+      /* Layer 4: stack groups vertically, items in 2-col grid */
+      .integ-groups { flex-direction: column; gap: 10px; }
+      .integ-divider { width: 100%; height: 1px; }
+      .integ-items {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 4px;
+      }
+      .integ-item { font-size: 9px; padding: 5px 6px; }
+      .integ-item-icon { font-size: 11px; }
+      .integ-item-text { white-space: normal; }
+
+      /* Connectors: single centered vertical line, no sprawl */
+      .connector-row { margin: 0 8px; height: 30px; }
+      .connector-line { display: none; }
+      .connector-line:first-child { display: block; width: 1px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-eyebrow">System Architecture</div>
+    <div class="header-title">ATLAS</div>
+    <div class="header-sub">AI Orchestration Layer · Nick Pap · Sydney</div>
+    <button id="tour-btn" onclick="startTour()">▶ Take a Tour</button>
+    <button class="wnc-btn" style="margin-left:10px" onclick="document.getElementById('wnc-overlay').classList.add('open')">Why not just use ChatGPT?</button>
+  </div>
+
+  <div class="diagram">
+
+    <!-- ══════════ LAYER 1 — YOU ══════════ -->
+    <div id="layer-you" class="layer layer-you">
+      <div class="layer-stripe"></div>
+      <div class="layer-label">You</div>
+      <div class="layer-content">
+        <div class="node">
+          <div class="node-icon">👤</div>
+          <div class="node-name">Nick Pap · Sydney</div>
+          <div class="node-sub">WhatsApp · Telegram</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector 1→2 -->
+    <div class="connector-row">
+      <div class="connector-lines">
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════ LAYER 2 — ATLAS ══════════ -->
+    <div id="layer-atlas" class="layer layer-atlas">
+      <div class="layer-stripe"></div>
+      <div class="layer-label">Brain</div>
+      <div class="layer-content">
+        <div class="node">
+          <div class="node-icon">🤖</div>
+          <div class="node-name">ATLAS — AI ORCHESTRATOR</div>
+          <div class="node-sub">DigitalOcean VPS Sydney &nbsp;·&nbsp; Claude Sonnet + Opus &nbsp;·&nbsp; 24/7</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector 2→3 -->
+    <div class="connector-row">
+      <div class="connector-lines">
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════ LAYER 3 — DEPARTMENTS ══════════ -->
+    <div id="layer-depts" class="layer layer-depts">
+      <div class="layer-stripe"></div>
+      <div class="layer-label">7 Departments</div>
+      <div class="layer-content">
+        <div class="node">
+          <div class="node-icon">🗓</div>
+          <div class="node-name">Chief of Staff</div>
+          <div class="node-sub">Scheduling</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">💰</div>
+          <div class="node-name">CFO</div>
+          <div class="node-sub">Finance</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">⚙️</div>
+          <div class="node-name">CTO</div>
+          <div class="node-sub">Tech &amp; Build</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">📣</div>
+          <div class="node-name">CMO</div>
+          <div class="node-sub">Marketing</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">⚖️</div>
+          <div class="node-name">Legal</div>
+          <div class="node-sub">Contracts</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">🤝</div>
+          <div class="node-name">BD</div>
+          <div class="node-sub">Pipeline</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">🧠</div>
+          <div class="node-name">Knowledge Steward</div>
+          <div class="node-sub">Field Data</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector 3→4 -->
+    <div class="connector-row">
+      <div class="connector-lines">
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════ LAYER 4 — INTEGRATIONS & AUTOMATIONS ══════════ -->
+    <div id="layer-integ" class="layer layer-integ">
+      <div class="layer-stripe"></div>
+      <div class="layer-label">Integrations · Automations</div>
+      <div class="layer-content" style="align-items:flex-start;">
+        <div class="integ-groups">
+
+          <!-- INTEGRATIONS -->
+          <div id="integ-group-blue" class="integ-group">
+            <div class="integ-group-label blue">Integrations</div>
+            <div class="integ-items">
+              <div class="integ-item blue"><span class="integ-item-icon">📅</span><span class="integ-item-text">Google Calendar</span></div>
+              <div class="integ-item blue"><span class="integ-item-icon">📧</span><span class="integ-item-text">Gmail</span></div>
+              <div class="integ-item blue"><span class="integ-item-icon">📁</span><span class="integ-item-text">Google Drive</span></div>
+              <div class="integ-item blue"><span class="integ-item-icon">🗄</span><span class="integ-item-text">Supabase</span></div>
+              <div class="integ-item blue"><span class="integ-item-icon">⚡</span><span class="integ-item-text">Anthropic API</span></div>
+            </div>
+          </div>
+
+          <div class="integ-divider"></div>
+
+          <!-- AUTOMATIONS -->
+          <div id="integ-group-amber" class="integ-group">
+            <div class="integ-group-label amber">Automations</div>
+            <div class="integ-items">
+              <div class="integ-item amber"><span class="integ-item-icon">🌅</span><span class="integ-item-text">Morning Brief · 6am</span></div>
+              <div class="integ-item amber"><span class="integ-item-icon">🌆</span><span class="integ-item-text">Evening Close · 5pm</span></div>
+              <div class="integ-item amber"><span class="integ-item-icon">📊</span><span class="integ-item-text">Sunday Review</span></div>
+              <div class="integ-item amber"><span class="integ-item-icon">📆</span><span class="integ-item-text">Monthly Review</span></div>
+              <div class="integ-item amber"><span class="integ-item-icon">💸</span><span class="integ-item-text">Spend Check · 2hr</span></div>
+              <div class="integ-item amber"><span class="integ-item-icon">📥</span><span class="integ-item-text">Inbox Processor · 15min</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector 4→5 -->
+    <div class="connector-row">
+      <div class="connector-lines">
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+        <div class="connector-line"><div class="connector-arrow"></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════ LAYER 5 — VENTURES SERVED ══════════ -->
+    <div id="layer-biz" class="layer layer-biz">
+      <div class="layer-stripe"></div>
+      <div class="layer-label">Ventures Served</div>
+      <div class="layer-content">
+        <div class="node">
+          <div class="node-icon">🏗</div>
+          <div class="node-name">The Project</div>
+          <div class="node-sub">$60M Industrial</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">💡</div>
+          <div class="node-name">Project IQ</div>
+          <div class="node-sub">SaaS · Bubble</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">📐</div>
+          <div class="node-name">Pap Projects</div>
+          <div class="node-sub">Estimating</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">🖌</div>
+          <div class="node-name">Civic Rendering</div>
+          <div class="node-sub">Rendering</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">🚗</div>
+          <div class="node-name">Spartan</div>
+          <div class="node-sub">Motor Co.</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">🎧</div>
+          <div class="node-name">DJ</div>
+          <div class="node-sub">Weddings</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">📱</div>
+          <div class="node-name">Progress IQ</div>
+          <div class="node-sub">Health App</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">📈</div>
+          <div class="node-name">Crypto Markets</div>
+          <div class="node-sub">Scanner · Wyckoff</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">💹</div>
+          <div class="node-name">Stock Scanner</div>
+          <div class="node-sub">Equities</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">🏠</div>
+          <div class="node-name">Real Estate</div>
+          <div class="node-sub">Property</div>
+        </div>
+        <div class="node node-secret" style="border-color:rgba(255,255,255,0.15);opacity:0.7">
+          <div class="node-icon">🔒</div>
+          <div class="node-name" style="color:rgba(255,255,255,0.4)">Classified</div>
+          <div class="node-sub" style="color:rgba(255,255,255,0.2)">██████</div>
+        </div>
+        <div class="node node-secret" style="border-color:rgba(255,255,255,0.15);opacity:0.7">
+          <div class="node-icon">🔒</div>
+          <div class="node-name" style="color:rgba(255,255,255,0.4)">Classified</div>
+          <div class="node-sub" style="color:rgba(255,255,255,0.2)">██████</div>
+        </div>
+        <div class="node node-secret" style="border-color:rgba(255,255,255,0.15);opacity:0.7">
+          <div class="node-icon">🔒</div>
+          <div class="node-name" style="color:rgba(255,255,255,0.4)">Classified</div>
+          <div class="node-sub" style="color:rgba(255,255,255,0.2)">██████</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .diagram -->
+
+  <!-- STORY BAR -->
+
+  <!-- CTA SECTION -->
+  <div style="max-width:700px;margin:48px auto 32px;padding:0 24px">
+    <div style="background:#0E1214;border:1px solid rgba(0,230,118,0.35);border-radius:16px;padding:32px 36px;text-align:center">
+      <div style="font-size:10px;letter-spacing:0.25em;text-transform:uppercase;color:rgba(0,230,118,0.6);font-family:'DM Mono',monospace;margin-bottom:12px">AI Consulting · Sydney</div>
+      <div style="font-size:clamp(22px,4vw,32px);font-weight:500;color:#E8EAF0;font-family:'DM Mono',monospace;margin-bottom:10px">Ready to build your own ATLAS?</div>
+      <div style="font-size:13px;color:rgba(232,234,240,0.45);font-family:'DM Mono',monospace;margin-bottom:28px;line-height:1.8">
+        30-minute interview &nbsp;→&nbsp; live within 24 hours
+      </div>
+      <a href="https://wa.me/61449104378" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#00E676;color:#000;padding:14px 28px;border-radius:10px;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;text-decoration:none;letter-spacing:0.04em;transition:filter 0.2s">
+        💬 Message Nick on WhatsApp →
+      </a>
+      <br>
+      <button class="wnc-btn" onclick="document.getElementById('wnc-overlay').classList.add('open')">Why not just use ChatGPT?</button>
+    </div>
+  </div>
+
+  <!-- WHY NOT CLAUDE MODAL -->
+  <div id="wnc-overlay" class="wnc-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="wnc-modal">
+      <div class="wnc-header">
+        <div class="wnc-eyebrow">The real difference</div>
+        <div class="wnc-headline">Why not just use<br><span>ChatGPT or Claude?</span></div>
+        <div class="wnc-sub">Because they don't know you exist.</div>
+        <button class="wnc-close-btn" onclick="document.getElementById('wnc-overlay').classList.remove('open')">×</button>
+      </div>
+      <div class="wnc-body">
+        <div class="wnc-row">
+          <div class="wnc-icon">🧠</div>
+          <div>
+            <div class="wnc-label">Memory</div>
+            <div class="wnc-text">ChatGPT starts from zero every session. ATLAS knows your businesses, your rules, your history — and never forgets.</div>
+          </div>
+        </div>
+        <div class="wnc-row">
+          <div class="wnc-icon">⚡</div>
+          <div>
+            <div class="wnc-label">Proactive</div>
+            <div class="wnc-text">ChatGPT waits to be asked. ATLAS sends your 6am briefing, flags a deal gone quiet, nudges a lead you forgot — without you lifting a finger.</div>
+          </div>
+        </div>
+        <div class="wnc-row">
+          <div class="wnc-icon">🏗</div>
+          <div>
+            <div class="wnc-label">Built for your world</div>
+            <div class="wnc-text">ChatGPT is generic. ATLAS has 7 departments — each with its own rules, expertise, and output format — built around your specific ventures.</div>
+          </div>
+        </div>
+        <div class="wnc-row">
+          <div class="wnc-icon">🔗</div>
+          <div>
+            <div class="wnc-label">Actually connected</div>
+            <div class="wnc-text">ChatGPT gives you text. ATLAS reads your calendar, writes to Drive, logs to your CRM, and sends briefings — it acts, not just advises.</div>
+          </div>
+        </div>
+        <div class="wnc-divider"></div>
+        <div class="wnc-cta">
+          <div class="wnc-cta-text">Ready for an AI that actually knows your business?</div>
+          <button onclick="document.getElementById('wnc-overlay').classList.remove('open'); setTimeout(function(){ var btn=document.querySelector('.cw-btn'); if(btn){btn.click();} },200);" class="wnc-cta-btn" style="border:none;cursor:pointer;margin-bottom:12px;width:100%;justify-content:center">🌎 Try ATLAS</button>
+          <a href="https://wa.me/61449104378" target="_blank" style="display:block;text-align:center;font-family:'DM Mono',monospace;font-size:12px;color:rgba(232,234,240,0.45);text-decoration:none;letter-spacing:0.06em">or 💬 Talk to Nick on WhatsApp →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="story-bar">
+    <span class="story-step">Nick sends a message</span>
+    <span class="story-arrow">→</span>
+    <span class="story-step">ATLAS receives &amp; routes</span>
+    <span class="story-arrow">→</span>
+    <span class="story-step">Departments handle it</span>
+    <span class="story-arrow">→</span>
+    <span class="story-step">Integrations power it</span>
+    <span class="story-arrow">→</span>
+    <span class="story-step">Businesses benefit</span>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    Built by <span>ATLAS</span> &nbsp;·&nbsp; Powered by Anthropic &nbsp;·&nbsp; Sydney, Australia
+  </div>
+
+</div><!-- end .page -->
+<!-- ══════════ TOUR OVERLAY ══════════ -->
+<div id="tour-overlay" class="tour-overlay">
+  <button class="tour-skip" onclick="endTour()">✕ Skip tour</button>
+  <div class="tour-card" id="tour-card">
+    <div class="tour-card-meta">
+      <span class="tour-step-label" id="tour-step-label"></span>
+      <span class="tour-counter" id="tour-counter"></span>
+    </div>
+    <div class="tour-card-title" id="tour-title"></div>
+    <div class="tour-card-text" id="tour-text"></div>
+    <div class="tour-card-actions">
+      <button class="tour-btn-back hidden" id="tour-back" onclick="tourBack()">← Back</button>
+      <button class="tour-btn-next" id="tour-next" onclick="tourNext()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var TOUR_STEPS = [
+    {
+      targetId:  'layer-you',
+      color:     '#26C6DA',
+      glow:      'rgba(38,198,218,0.45)',
+      stepLabel: 'Meet Nick',
+      title:     'This is Nick',
+      text:      'Nick runs multiple ventures in Sydney. He talks to ATLAS through WhatsApp or Telegram \u2014 just like texting a colleague. No dashboards, no logins.'
+    },
+    {
+      targetId:  'layer-atlas',
+      color:     '#00E676',
+      glow:      'rgba(0,230,118,0.45)',
+      stepLabel: 'The Brain',
+      title:     'ATLAS \u2014 The AI Brain',
+      text:      'Every message Nick sends is received by ATLAS \u2014 a custom AI system running 24/7 on a private server in Sydney. It reads, understands, and decides what to do next.'
+    },
+    {
+      targetId:  'layer-depts',
+      color:     '#CE93D8',
+      glow:      'rgba(206,147,216,0.45)',
+      stepLabel: 'The Team',
+      title:     '7 Specialist Departments',
+      text:      'ATLAS routes each request to the right department. Ask a legal question \u2192 Legal. Need a financial report \u2192 CFO. Want marketing copy \u2192 CMO. Each department has its own rules and expertise.'
+    },
+    {
+      targetId:  'layer-integ',
+      color:     '#64B5F6',
+      glow:      'rgba(100,181,246,0.45)',
+      stepLabel: 'The Tools',
+      title:     'Connected to Everything',
+      text:      "ATLAS plugs into real tools \u2014 Google Calendar for scheduling, Gmail for emails, Google Drive for documents, and Supabase as its memory. It doesn\u2019t just talk \u2014 it acts."
+    },
+    {
+      targetId:  'layer-integ',
+      color:     '#FFD54F',
+      glow:      'rgba(255,213,79,0.45)',
+      stepLabel: 'Always On',
+      title:     'Automated on a Schedule',
+      text:      "ATLAS doesn\u2019t wait to be asked. Every morning at 6am it sends a briefing. Every evening it closes the day. Every Sunday it reviews the week. It runs the business even when Nick is asleep."
+    },
+    {
+      targetId:  'layer-biz',
+      color:     '#FF8A65',
+      glow:      'rgba(255,138,101,0.45)',
+      stepLabel: 'The Result',
+      title:     'Everything Benefits',
+      text:      'Every venture Nick runs gets smarter \u2014 faster decisions, better copy, legal flags caught early, finances tracked automatically. One AI system. Multiple ventures. Zero overhead.'
+    }
+  ];
+
+  var _step = 0;
+
+  function startTour() {
+    _step = 0;
+    document.getElementById('tour-overlay').classList.add('active');
+    document.body.classList.add('tour-active');
+    // Hide chat button during tour
+    var cwBtn = document.querySelector('.cw-btn');
+    if (cwBtn) cwBtn.style.display = 'none';
+    _show(0);
+  }
+
+  function endTour(showModal) {
+    document.getElementById('tour-overlay').classList.remove('active');
+    document.body.classList.remove('tour-active');
+    _clear();
+    // Show chat button after tour
+    var cwBtn = document.querySelector('.cw-btn');
+    if (cwBtn) cwBtn.style.display = '';
+    // Auto-show "Why not ChatGPT" modal at end of tour
+    if (showModal) {
+      setTimeout(function() {
+        document.getElementById('wnc-overlay').classList.add('open');
+      }, 400);
+    }
+  }
+
+  function tourNext() {
+    if (_step < TOUR_STEPS.length - 1) { _show(_step + 1); }
+    else { endTour(true); }  // true = show WNC modal at end
+  }
+
+  function tourBack() {
+    if (_step > 0) _show(_step - 1);
+  }
+
+  function _clear() {
+    document.querySelectorAll('.tour-highlight').forEach(function(el) {
+      el.classList.remove('tour-highlight');
+      el.style.removeProperty('--tour-color');
+      el.style.removeProperty('--tour-glow');
+    });
+  }
+
+  function _show(index) {
+    _clear();
+    var s      = TOUR_STEPS[index];
+    var target = document.getElementById(s.targetId);
+    var card   = document.getElementById('tour-card');
+
+    target.classList.add('tour-highlight');
+    target.style.setProperty('--tour-color', s.color);
+    target.style.setProperty('--tour-glow',  s.glow);
+
+    card.style.borderColor = s.color + '70';
+    card.style.boxShadow   = '0 12px 60px rgba(0,0,0,0.75), 0 0 40px ' + s.glow;
+
+    document.getElementById('tour-step-label').textContent = s.stepLabel;
+    document.getElementById('tour-step-label').style.color = s.color;
+    document.getElementById('tour-counter').textContent    = (index + 1) + ' / ' + TOUR_STEPS.length;
+    document.getElementById('tour-title').textContent      = s.title;
+    document.getElementById('tour-text').textContent       = s.text;
+
+    var back = document.getElementById('tour-back');
+    if (index === 0) back.classList.add('hidden');
+    else             back.classList.remove('hidden');
+
+    var next = document.getElementById('tour-next');
+    next.textContent = (index === TOUR_STEPS.length - 1) ? 'Got it \uD83C\uDF89' : 'Next \u2192';
+
+    // Scroll element into the top 60% of viewport so it clears the fixed tour card (~250px tall)
+    setTimeout(function() {
+      var rect = target.getBoundingClientRect();
+      var cardHeight = 300; // tour card height + bottom gap + padding
+      var viewportHeight = window.innerHeight;
+      var availableHeight = viewportHeight - cardHeight;
+      // Place element in top 40% of available space (well above the card)
+      var elementTop = rect.top + window.scrollY;
+      var desiredScrollY = elementTop - (availableHeight * 0.2);
+      window.scrollTo({ top: Math.max(0, desiredScrollY), behavior: 'smooth' });
+    }, 60);
+
+    _step = index;
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', function(e) {
+    if (!document.getElementById('tour-overlay').classList.contains('active')) return;
+    if      (e.key === 'ArrowRight' || e.key === 'Enter') tourNext();
+    else if (e.key === 'ArrowLeft')                       tourBack();
+    else if (e.key === 'Escape')                          endTour();
+  });
+
+  // Auto-start tour for all visitors (or when ?tour=1)
+  window.addEventListener('load', function() {
+    setTimeout(startTour, 800);
+  });
+
+  // Expose to global scope for onclick handlers
+  window.startTour = startTour;
+  window.endTour   = endTour;
+  window.tourNext  = tourNext;
+  window.tourBack  = tourBack;
+}());
+</script>
+
+<!-- ── CHAT WIDGET ─────────────────────────────────────────────── -->
+<style>
+  .cw-btn {
+    position: fixed; bottom: 28px; right: 28px; z-index: 9000;
+    background: #00E676; color: #000; border: none; border-radius: 50px;
+    padding: 14px 22px; font-family: 'DM Mono', monospace; font-size: 13px;
+    font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 24px rgba(0,230,118,0.4); transition: all 0.2s;
+    animation: cwPulse 3s ease-in-out infinite;
+  }
+  .cw-btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+  @keyframes cwPulse {
+    0%,100% { box-shadow: 0 4px 24px rgba(0,230,118,0.4); }
+    50% { box-shadow: 0 4px 40px rgba(0,230,118,0.7); }
+  }
+  .cw-panel {
+    position: fixed; bottom: 90px; right: 28px; z-index: 9001;
+    width: 380px; height: 520px; background: #0E1214;
+    border: 1px solid rgba(0,230,118,0.25); border-radius: 16px;
+    display: none; flex-direction: column;
+    box-shadow: 0 16px 60px rgba(0,0,0,0.7);
+    font-family: 'DM Mono', monospace; overflow: hidden;
+  }
+  .cw-panel.open { display: flex; animation: cwSlide 0.25s ease; }
+  @keyframes cwSlide { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform:none; } }
+  .cw-header {
+    padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.07);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .cw-dot { width: 8px; height: 8px; border-radius: 50%; background: #00E676; flex-shrink:0;
+    animation: cwBlink 2s ease-in-out infinite; }
+  @keyframes cwBlink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .cw-title { flex: 1; font-size: 13px; font-weight: 500; color: #E8EAF0; }
+  .cw-title span { font-size: 10px; color: rgba(0,230,118,0.7); display:block; letter-spacing:0.08em; }
+  .cw-header-btns { display: flex; gap: 8px; align-items: center; }
+  .cw-book { font-size: 10px; color: #00E676; text-decoration: none; letter-spacing:0.06em;
+    border: 1px solid rgba(0,230,118,0.3); padding: 4px 8px; border-radius: 6px; }
+  .cw-close { background: none; border: none; color: rgba(232,234,240,0.4); font-size: 18px;
+    cursor: pointer; padding: 0; line-height: 1; }
+  .cw-close:hover { color: #E8EAF0; }
+  .cw-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .cw-messages::-webkit-scrollbar { width: 3px; }
+  .cw-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+  .cw-msg { max-width: 85%; line-height: 1.55; font-size: 12px; padding: 10px 13px; border-radius: 12px; }
+  .cw-msg.atlas { background: rgba(0,230,118,0.08); border: 1px solid rgba(0,230,118,0.15);
+    color: #E8EAF0; align-self: flex-start; border-radius: 4px 12px 12px 12px; }
+  .cw-msg.user { background: #00E676; color: #000; align-self: flex-end;
+    border-radius: 12px 4px 12px 12px; font-weight: 500; }
+  .cw-typing { display: flex; gap: 4px; padding: 10px 13px; align-self: flex-start; }
+  .cw-typing span { width: 6px; height: 6px; border-radius: 50%; background: rgba(0,230,118,0.5); }
+  .cw-typing span:nth-child(1) { animation: cwDot 1.2s 0s infinite; }
+  .cw-typing span:nth-child(2) { animation: cwDot 1.2s 0.2s infinite; }
+  .cw-typing span:nth-child(3) { animation: cwDot 1.2s 0.4s infinite; }
+  @keyframes cwDot { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  .cw-input-bar { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.07);
+    display: flex; gap: 8px; align-items: center; }
+  .cw-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 9px 12px; color: #E8EAF0; font-family: 'DM Mono', monospace;
+    font-size: 12px; outline: none; }
+  .cw-input:focus { border-color: rgba(0,230,118,0.4); }
+  .cw-input::placeholder { color: rgba(232,234,240,0.25); }
+  .cw-send { background: #00E676; border: none; border-radius: 8px; padding: 9px 14px;
+    color: #000; font-size: 14px; cursor: pointer; transition: filter 0.15s; }
+  .cw-send:hover { filter: brightness(1.1); }
+  .cw-footer { padding: 6px 14px 10px; text-align: center; font-size: 9px;
+    color: rgba(232,234,240,0.2); letter-spacing: 0.08em; }
+  @media(max-width:480px) {
+    .cw-panel { width: calc(100vw - 24px); right: 12px; bottom: 80px; height: 460px; }
+    .cw-btn { bottom: 16px; right: 12px; padding: 12px 18px; font-size: 12px; }
+  }
+</style>
+
+<button class="cw-btn" onclick="cwToggle()">💬 Try ATLAS</button>
+
+<div class="cw-panel" id="cw-panel">
+  <div class="cw-header">
+    <div class="cw-dot"></div>
+    <div class="cw-title">ATLAS — AI Chief of Staff<span>LIVE DEMO · SYDNEY</span></div>
+    <div class="cw-header-btns">
+      <a href="https://wa.me/61449104378" target="_blank" class="cw-book">Book a call →</a>
+      <button class="cw-close" onclick="cwToggle()">×</button>
+    </div>
+  </div>
+  <div class="cw-messages" id="cw-messages"></div>
+  <div class="cw-input-bar">
+    <input class="cw-input" id="cw-input" placeholder="Ask me anything…" onkeydown="if(event.key==='Enter')cwSend()"/>
+    <button class="cw-send" onclick="cwSend()">↑</button>
+  </div>
+  <div class="cw-footer">Powered by Claude AI · Demo by ATLAS · <span id="cw-counter">10 messages remaining</span></div>
+</div>
+
+<script>
+// ── REPLACE THIS WITH A RESTRICTED ANTHROPIC API KEY FOR DEMO USE ──
+// Create a key at console.anthropic.com with a low spend limit (e.g. $5/month)
+var DEMO_API_KEY = 'REDACTED_SET_YOUR_KEY_HERE'; // Add a restricted Anthropic key here for demo use // Note: replace with a dedicated low-limit key for public demos
+
+var cwHistory = [];
+var cwOpened = false;
+var cwMsgCount = 0;
+var CW_LIMIT = 10;
+
+var CW_SYSTEM = `You are ATLAS, an AI chief of staff demo for a Sydney-based AI consulting service.
+
+You help entrepreneurs who run multiple ventures stay on top of everything — priorities, finances, legal flags, marketing, operations.
+
+You are: direct, terse, action-first. No fluff. Answer the question first, context after. Never say "I'd be happy to help."
+
+When asked what you can do: explain that you route requests to specialist departments (CFO, CMO, Legal, CTO, BD, Chief of Staff, Knowledge Steward), run automated briefings, connect to Google Calendar/Gmail/Drive, and manage tasks across all their ventures.
+
+When asked about pricing: say "Setup from $1,500. Monthly management from $300/month. Covers everything — server, AI, integrations, and ongoing updates. Book a call with Nick to get started."
+
+When asked how to get started: say "Nick does a 30-minute interview, I learn your ventures, and you're live within 24 hours. Message +61 449 104 378 on WhatsApp to book."
+
+Keep responses under 100 words. Be impressive. Show range.`;
+
+function cwToggle() {
+  var panel = document.getElementById('cw-panel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open') && !cwOpened) {
+    cwOpened = true;
+    setTimeout(function() {
+      cwAddMsg('atlas', "G'day. I'm ATLAS — an AI chief of staff built for entrepreneurs running multiple ventures. Ask me anything about running a business, managing priorities, or what I can do for you.");
+    }, 400);
+  }
+  if (panel.classList.contains('open')) {
+    setTimeout(function() { document.getElementById('cw-input').focus(); }, 300);
+  }
+}
+
+function cwAddMsg(role, text) {
+  var msgs = document.getElementById('cw-messages');
+  var div = document.createElement('div');
+  div.className = 'cw-msg ' + role;
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function cwShowTyping() {
+  var msgs = document.getElementById('cw-messages');
+  var div = document.createElement('div');
+  div.className = 'cw-typing'; div.id = 'cw-typing';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function cwHideTyping() {
+  var t = document.getElementById('cw-typing');
+  if (t) t.remove();
+}
+
+async function cwSend() {
+  if (cwMsgCount >= CW_LIMIT) {
+    cwAddMsg('atlas', 'You\'ve reached the demo limit of ' + CW_LIMIT + ' messages. Ready to build your own ATLAS? Message Nick on WhatsApp: +61 449 104 378');
+    document.getElementById('cw-input').disabled = true;
+    document.querySelector('.cw-send').disabled = true;
+    return;
+  }
+  var input = document.getElementById('cw-input');
+  var text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  cwMsgCount++;
+  var remaining = CW_LIMIT - cwMsgCount;
+  var counterEl = document.getElementById('cw-counter');
+  if (counterEl) counterEl.textContent = remaining + ' message' + (remaining === 1 ? '' : 's') + ' remaining';
+  if (remaining <= 0 && counterEl) { counterEl.style.color = '#FF5252'; }
+  cwAddMsg('user', text);
+  cwHistory.push({ role: 'user', content: text });
+  cwShowTyping();
+
+  try {
+    var messages = cwHistory.slice(-10);
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': DEMO_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 256,
+        system: CW_SYSTEM,
+        messages: messages
+      })
+    });
+    var data = await resp.json();
+    cwHideTyping();
+    if (data.content && data.content[0]) {
+      var reply = data.content[0].text;
+      cwHistory.push({ role: 'assistant', content: reply });
+      cwAddMsg('atlas', reply);
+    } else {
+      throw new Error('No response');
+    }
+  } catch(e) {
+    cwHideTyping();
+    cwAddMsg('atlas', 'ATLAS is momentarily offline. Contact Nick directly on WhatsApp: +61 449 104 378');
+  }
+}
+</script>
+
+<style>
+  .wnc-btn{background:none;border:1px solid rgba(255,255,255,0.15);color:rgba(232,234,240,0.5);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.08em;padding:8px 16px;border-radius:8px;cursor:pointer;transition:all 0.2s;margin-top:12px}
+  .wnc-btn:hover{border-color:rgba(255,255,255,0.35);color:#E8EAF0}
+  .wnc-overlay{display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+  .wnc-overlay.open{display:flex!important}
+  .wnc-modal{background:#0E1214;border:1px solid rgba(255,255,255,0.1);border-radius:20px;max-width:560px;width:100%;overflow-y:auto;max-height:90vh;box-shadow:0 24px 80px rgba(0,0,0,0.8)}
+  .wnc-header{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.07);position:relative}
+  .wnc-eyebrow{font-size:10px;letter-spacing:0.25em;text-transform:uppercase;color:rgba(232,234,240,0.3);margin-bottom:10px;font-family:'DM Mono',monospace}
+  .wnc-headline{font-size:clamp(20px,4vw,28px);font-weight:500;color:#E8EAF0;font-family:'DM Mono',monospace;line-height:1.3;margin-bottom:6px}
+  .wnc-headline span{color:#00E676}
+  .wnc-sub{font-size:14px;color:rgba(232,234,240,0.4);font-family:'DM Mono',monospace}
+  .wnc-close-btn{position:absolute;top:20px;right:20px;background:none;border:none;color:rgba(232,234,240,0.4);font-size:24px;cursor:pointer;line-height:1}
+  .wnc-body{padding:16px 20px 24px}
+  .wnc-row{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+  .wnc-icon{font-size:22px;flex-shrink:0;margin-top:2px}
+  .wnc-label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(0,230,118,0.7);font-family:'DM Mono',monospace;margin-bottom:4px}
+  .wnc-text{font-size:12px;color:rgba(232,234,240,0.65);font-family:'DM Mono',monospace;line-height:1.6}
+  .wnc-divider{height:1px;background:rgba(255,255,255,0.06);margin:20px 0}
+  .wnc-cta{text-align:center;padding-top:4px}
+  .wnc-cta-text{font-size:13px;color:rgba(232,234,240,0.45);margin-bottom:14px;font-family:'DM Mono',monospace}
+  .wnc-cta-btn{display:inline-flex;align-items:center;gap:8px;background:#00E676;color:#000;padding:13px 26px;border-radius:10px;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;text-decoration:none}
+</style>
+</body>
+</html>
